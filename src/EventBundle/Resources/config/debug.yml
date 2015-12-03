@@ -1,0 +1,9 @@
+services:
+    debug.delayed_event_dispatcher:
+        class: Symfony\Component\HttpKernel\Debug\TraceableEventDispatcher
+        arguments:
+            - "@debug.delayed_event_dispatcher.parent"
+            - "@debug.stopwatch"
+            - "@?logger"
+        tag:
+            - { name: monolog.logger, channel: event }

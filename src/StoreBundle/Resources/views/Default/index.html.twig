@@ -8,6 +8,9 @@
             <li>
                 {{ product.name }}
                 <strong>{{ product.price }}</strong>
+                <a href="{{ path('delete', {id: product.id}) }}">
+                    &times;
+                </a>
             </li>
         {% else %}
             <li>No products yet.</li>
@@ -17,6 +20,14 @@
 <div class="column">
     <h2>Create a new product:</h2>
     {{ form(form) }}
+</div>
+
+<div class="log">
+{% for label, flashes in app.session.flashbag.all %}
+    {% for flash in flashes %}
+        <p class="{{ label }}">{{ message }}</p>
+    {% endfor %}
+{% endfor %}
 </div>
 {% endblock %}
 

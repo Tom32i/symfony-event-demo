@@ -2,13 +2,7 @@ services:
     # Delayed dispatcher
     delayed_event_dispatcher:
         class: EventBundle\Event\Dispatcher\DelayedEventDispatcher
+        arguments:
+            - "@service_container"
         tags:
             - { name: kernel.event_subscriber }
-
-    # Doctrine Event Subscriber
-    doctrine_event_subscriber:
-        class: EventBundle\Event\Subscriber\DoctrineSubscriber
-        arguments:
-            - "@delayed_event_dispatcher"
-        tags:
-            - { name: doctrine.event_subscriber, connection: default }

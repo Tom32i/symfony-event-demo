@@ -2,7 +2,9 @@
 
 namespace StoreBundle\Controller;
 
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use StoreBundle\Entity\Product;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -12,21 +14,6 @@ class DefaultController extends Controller
      * @Route("/", name="list")
      */
     public function indexAction(Request $request)
-    {
-        $form = $this->createForm('StoreBundle\Form\ProductType', null, [
-            'action' => $this->generateUrl('new'),
-        ]);
-
-        return $this->render('StoreBundle:Default:index.html.twig', [
-            'products' => $this->getRepository()->findAll(),
-            'form'     => $form->createView(),
-        ]);
-    }
-
-    /**
-     * @Route("/new", name="new")
-     */
-    public function newAction(Request $request)
     {
         $form = $this->createForm('StoreBundle\Form\ProductType');
 
@@ -42,6 +29,18 @@ class DefaultController extends Controller
             'products' => $this->getRepository()->findAll(),
             'form'     => $form->createView(),
         ]);
+    }
+
+    /**
+     * @Route("/delete/{id}", name="delete")
+     * @ParamConverter()
+     */
+    public function deleteAction(Request $request, Product $product)
+    {
+        $this->getManager()->remove($product);
+        $this->getManager()->flush($product);
+
+        return $this->redirectToRoute('list');
     }
 
     /**
