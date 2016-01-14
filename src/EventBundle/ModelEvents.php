@@ -3,7 +3,7 @@
 namespace EventBundle;
 
 /**
- * Model event direcotry
+ * Model event directory
  */
 class ModelEvents
 {

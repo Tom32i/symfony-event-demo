@@ -2,10 +2,13 @@
 
 namespace EventBundle\Event\Subscriber;
 
-use EventBundle\Event\ModelEvent;
-use EventBundle\ModelEvents;
 use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use EventBundle\Event\ModelEvent;
+use EventBundle\Event\ModelChangedEvent;
+use EventBundle\Event\ModelDeletedEvent;
+use EventBundle\ModelEvents;
+use EventBundle\Utils\Inventory;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -21,6 +24,13 @@ class DoctrineSubscriber implements EventSubscriber
     private $dispatcher;
 
     /**
+     * Store entities change set and identifiers
+     *
+     * @var Inventory
+     */
+    private $inventory;
+
+    /**
      * Constructor
      *
      * @param EventDispatcherInterface $dispatcher
@@ -28,6 +38,7 @@ class DoctrineSubscriber implements EventSubscriber
     public function __construct(EventDispatcherInterface $dispatcher)
     {
         $this->dispatcher = $dispatcher;
+        $this->inventory  = new Inventory();
     }
 
     /**
@@ -37,7 +48,9 @@ class DoctrineSubscriber implements EventSubscriber
     {
         return [
             'postPersist',
+            'preUpdate',
             'postUpdate',
+            'preRemove',
             'postRemove',
         ];
     }
@@ -55,15 +68,40 @@ class DoctrineSubscriber implements EventSubscriber
     }
 
     /**
-     * Post update event handler
+     * Store change set for the entity
+     *
+     * @param PreUpdateEventArgs $args
+     */
+    public function preUpdate(PreUpdateEventArgs $args)
+    {
+        $this->inventory->setChangeSet($args->getEntity(), $args->getEntityChangeSet());
+    }
+
+    /**
+     * Retrieve change set and dispatch an Updated event
      *
      * @param LifecycleEventArgs $args
      */
     public function postUpdate(LifecycleEventArgs $args)
     {
-        $event = new ModelEvent($args->getEntity());
+        $entity = $args->getEntity();
+        $event  = new ModelChangedEvent($entity, $this->inventory->getChangeSet($entity));
 
         $this->dispatcher->dispatch(ModelEvents::UPDATED, $event);
+    }
+
+    /**
+     * Pre remove event handler
+     *
+     * @param LifecycleEventArgs $args
+     */
+    public function preRemove(LifecycleEventArgs $args)
+    {
+        $entity        = $args->getEntity();
+        $classMetadata = $args->getEntityManager()->getClassMetadata(get_class($entity));
+        $identifiers   = $classMetadata->getIdentifierValues($entity);
+
+        $this->inventory->setIdentifiers($entity, $identifiers);
     }
 
     /**
@@ -73,7 +111,8 @@ class DoctrineSubscriber implements EventSubscriber
      */
     public function postRemove(LifecycleEventArgs $args)
     {
-        $event = new ModelEvent($args->getEntity());
+        $entity = $args->getEntity();
+        $event  = new ModelDeletedEvent($entity, $this->inventory->getIdentifiers($entity));
 
         $this->dispatcher->dispatch(ModelEvents::DELETED, $event);
     }

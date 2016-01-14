@@ -3,6 +3,8 @@
 namespace StoreBundle\Service;
 
 use EventBundle\Event\ModelEvent;
+use EventBundle\Event\ModelChangedEvent;
+use EventBundle\Event\ModelDeletedEvent;
 use EventBundle\ModelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -12,23 +14,6 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 class Logger implements EventSubscriberInterface
 {
-    /**
-     * Session
-     *
-     * @var SessionInterface
-     */
-    private $session;
-
-    /**
-     * Constructor
-     *
-     * @param SessionInterface $session
-     */
-    public function __construct(SessionInterface $session)
-    {
-        $this->session = $session;
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -48,7 +33,11 @@ class Logger implements EventSubscriberInterface
      */
     public function onCreated(ModelEvent $event)
     {
-        $this->log($event->getModel(), 'created');
+        $this->log(sprintf(
+            '%s %s has been created.',
+            get_class($event->getModel()),
+            $event->getModel()->getId()
+        ));
     }
 
     /**
@@ -56,9 +45,14 @@ class Logger implements EventSubscriberInterface
      *
      * @param ModelEvent $event
      */
-    public function onUpdated(ModelEvent $event)
+    public function onUpdated(ModelChangedEvent $event)
     {
-        $this->log($event->getModel(), 'updated');
+        $this->log(sprintf(
+            '%s %s has been modified: [%s].',
+            get_class($event->getModel()),
+            $event->getModel()->getId(),
+            implode(', ', $event->getChanges())
+        ));
     }
 
     /**
@@ -66,26 +60,22 @@ class Logger implements EventSubscriberInterface
      *
      * @param ModelEvent $event
      */
-    public function onDeleted(ModelEvent $event)
+    public function onDeleted(ModelDeletedEvent $event)
     {
-        $this->log($event->getModel(), 'deleted');
+        $this->log(sprintf(
+            '%s %s has been deleted.',
+            get_class($event->getModel()),
+            implode('-', $event->getIdentifiers())
+        ));
     }
 
     /**
      * Log events
      *
-     * @param object $model
-     * @param string $verb
+     * @param string $message
      */
-    public function log($model, $verb)
+    public function log($message)
     {
-        $message = sprintf(
-            '%s %s has been %s',
-            get_class($model),
-            $model->getId(),
-            $verb
-        );
         dump($message);
-        $this->session->getFlashBag()->add('notice', $message);
     }
 }

@@ -48,8 +48,8 @@ class DelayedEventDispatcher extends ContainerAwareEventDispatcher implements Ev
         if (!$this->ready) {
             $this->ready = true;
 
-            foreach ($this->queue as $item) {
-                $this->dispatch($item['name'], $item['event']);
+            while ($event = array_shift($this->queue)) {
+                $this->dispatch($event['name'], $event['event']);
             }
         }
     }
