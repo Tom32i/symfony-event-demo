@@ -20,16 +20,5 @@ class EventExtension extends Extension
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
 
         $loader->load('services.yml');
-
-        if ($container->getParameter('kernel.debug')) {
-            $loader->load('debug.yml');
-
-            $definition = $container->findDefinition('delayed_event_dispatcher');
-            //$definition->setPublic(false);
-            $container->setDefinition('debug.delayed_event_dispatcher.parent', $definition);
-            $container->setAlias('delayed_event_dispatcher', 'debug.delayed_event_dispatcher');
-        }
-
-        $loader->load('doctrine.yml');
     }
 }

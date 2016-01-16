@@ -2,7 +2,5 @@ services:
     # Event Logger
     store.event_logger:
         class: StoreBundle\Service\Logger
-        arguments:
-            - "@session"
         tags:
-            - { name: delayed.event_subscriber }
+            - { name: kernel.event_subscriber }

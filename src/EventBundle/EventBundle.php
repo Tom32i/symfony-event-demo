@@ -11,17 +11,4 @@ use Symfony\Component\EventDispatcher\DependencyInjection\RegisterListenersPass;
  */
 class EventBundle extends Bundle
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function build(ContainerBuilder $container)
-    {
-        parent::build($container);
-
-        $container->addCompilerPass(new RegisterListenersPass(
-            'delayed_event_dispatcher',
-            'delayed.event_listener',
-            'delayed.event_subscriber'
-        ));
-    }
 }

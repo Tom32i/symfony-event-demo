@@ -18,9 +18,8 @@ class DefaultController extends Controller
         $form = $this->createForm('StoreBundle\Form\ProductType');
 
         if ($form->handleRequest($request)->isValid()) {
-            $product = $form->getData();
-            $this->getManager()->persist($product);
-            $this->getManager()->flush($product);
+            $this->getManager()->persist($form->getData());
+            $this->getManager()->flush();
 
             return $this->redirectToRoute('list');
         }
@@ -38,7 +37,7 @@ class DefaultController extends Controller
     public function deleteAction(Request $request, Product $product)
     {
         $this->getManager()->remove($product);
-        $this->getManager()->flush($product);
+        $this->getManager()->flush();
 
         return $this->redirectToRoute('list');
     }

@@ -2,29 +2,56 @@
 
 namespace EventBundle\Event\Dispatcher;
 
-use Symfony\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Symfony\Component\EventDispatcher\Event;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Dispatch events on Kernel Terminate
  */
-class DelayedEventDispatcher extends ContainerAwareEventDispatcher implements EventSubscriberInterface
+class DelayedEventDispatcher implements EventDispatcherInterface, EventSubscriberInterface
 {
+    /**
+     *  Event Dispatcher
+     *
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher;
+
     /**
      * Queued events
      *
      * @var array
      */
-    private $queue = [];
+    private $queue;
 
     /**
      * Is the dispatcher ready to dispatch events?
      *
      * @var boolean
      */
-    private $ready = false;
+    private $ready;
+
+    /**
+     * The Deleyad event dispatcher wraps another dispatcher
+     *
+     * @param EventDispatcherInterface $dispatcher
+     */
+    public function __construct(EventDispatcherInterface $dispatcher)
+    {
+        $this->dispatcher = $dispatcher;
+        $this->queue      = [];
+        $this->ready      = false;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function getSubscribedEvents()
+    {
+        return [KernelEvents::TERMINATE => 'setReady'];
+    }
 
     /**
      * {@inheritdoc}
@@ -32,12 +59,12 @@ class DelayedEventDispatcher extends ContainerAwareEventDispatcher implements Ev
     public function dispatch($eventName, Event $event = null)
     {
         if (!$this->ready) {
-            $this->queue[] = ['name' => $eventName, 'event' => $event];
+            $this->queue[] = ['name' => $eventName, 'instance' => $event];
 
             return $event;
         }
 
-        return parent::dispatch($eventName, $event);
+        return $this->dispatcher->dispatch($eventName, $event);
     }
 
     /**
@@ -49,7 +76,7 @@ class DelayedEventDispatcher extends ContainerAwareEventDispatcher implements Ev
             $this->ready = true;
 
             while ($event = array_shift($this->queue)) {
-                $this->dispatch($event['name'], $event['event']);
+                $this->dispatcher->dispatch($event['name'], $event['instance']);
             }
         }
     }
@@ -57,8 +84,56 @@ class DelayedEventDispatcher extends ContainerAwareEventDispatcher implements Ev
     /**
      * {@inheritdoc}
      */
-    public static function getSubscribedEvents()
+    public function addListener($eventName, $listener, $priority = 0)
     {
-        return [KernelEvents::TERMINATE => 'setReady'];
+        $this->dispatcher->addListener($eventName, $listener, $priority);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addSubscriber(EventSubscriberInterface $subscriber)
+    {
+        $this->dispatcher->addSubscriber($subscriber);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function removeListener($eventName, $listener)
+    {
+        $this->dispatcher->removeListener($eventName, $listener);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function removeSubscriber(EventSubscriberInterface $subscriber)
+    {
+        $this->dispatcher->removeSubscriber($subscriber);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getListeners($eventName = null)
+    {
+        return $this->dispatcher->getListeners($eventName = null);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getListenerPriority($eventName, $listener)
+    {
+        return $this->dispatcher->getListenerPriority($eventName, $listener);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function hasListeners($eventName = null)
+    {
+        return $this->dispatcher->hasListeners($eventName);
     }
 }
